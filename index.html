@@ -1,13 +1,114 @@
+
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#060818">
-<meta property="og:title" content="Grow Your Channel Faster">
-<meta property="og:description" content="Create Smarter. Grow Faster. Go Viral.">
-<title>Grow Your Channel Faster — AI Tools for Creators</title>
-<meta name="description" content="Discover viral ideas, create powerful content, optimize your videos, and grow your audience with one intelligent platform.">
-<link rel="stylesheet" href="/css/styles.css">
-</head><body><noscript>Please enable JavaScript to use Grow Your Channel Faster.</noscript><div id="app"></div><div id="toast" aria-live="polite"></div>
-<script src="/js/app.js"></script>
-</body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080b16">
+  <title>Grow Your Channel Faster | Creator AI</title>
+  <meta name="description" content="Discover content ideas, generate video titles, and grow your YouTube channel with smart creator tools.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="header">
+    <a class="logo" href="#">
+      <span class="logo-icon">▶</span>
+      <span>Grow<span class="accent">Faster</span></span>
+    </a>
+    <nav>
+      <a href="#tools">AI Tools</a>
+      <a href="#about">About</a>
+    </nav>
+    <a class="nav-btn" href="#tools">Get Started ↗</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="pill"><span class="dot"></span> YOUR CREATOR GROWTH TOOLKIT</div>
+      <h1>Grow Your Channel<br> <span class="gradient">Faster Than Ever.</span></h1>
+      <p class="hero-text">
+        Create smarter content, discover viral ideas, and make
+        your next video your best one yet.
+      </p>
+      <a href="#tools" class="primary-btn">Explore Free Tools <span>→</span></a>
+      <div class="stats">
+        <div><strong>💡</strong><span>Fresh Ideas</span></div>
+        <div><strong>⚡</strong><span>Quick Results</span></div>
+        <div><strong>🎯</strong><span>Creator Focused</span></div>
+      </div>
+    </section>
+
+    <section class="tools-section" id="tools">
+      <div class="section-heading">
+        <span class="eyebrow">CREATOR TOOLBOX</span>
+        <h2>Everything you need to <span class="gradient">grow</span></h2>
+        <p>Choose a tool and start creating.</p>
+      </div>
+
+      <div class="tool-grid">
+        <article class="tool-card">
+          <div class="tool-icon purple">💡</div>
+          <h3>Viral Video Ideas</h3>
+          <p>Get content ideas based on your channel niche.</p>
+          <button class="tool-btn" data-tool="ideas">Generate Ideas ↗</button>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon blue">✍️</div>
+          <h3>Title Generator</h3>
+          <p>Create catchy titles that make viewers curious.</p>
+          <button class="tool-btn" data-tool="titles">Create Titles ↗</button>
+        </article>
+
+        <article class="tool-card">
+          <div class="tool-icon green">#</div>
+          <h3>Hashtag Generator</h3>
+          <p>Find relevant hashtags for your next video.</p>
+          <button class="tool-btn" data-tool="hashtags">Generate Tags ↗</button>
+        </article>
+      </div>
+
+      <div class="generator">
+        <div class="generator-top">
+          <div>
+            <span class="eyebrow">FREE CREATOR TOOL</span>
+            <h2 id="tool-title">Video Idea Generator</h2>
+          </div>
+          <span class="sparkle">✦</span>
+        </div>
+        <label for="topic">Your channel niche or video topic</label>
+        <input id="topic" type="text" placeholder="e.g. Gaming, Technology, Fitness">
+        <div class="generator-actions">
+          <button id="generate" class="primary-btn">Generate <span>✦</span></button>
+          <button id="clear" class="secondary-btn">Clear</button>
+        </div>
+        <div id="results" class="results" aria-live="polite">
+          <div class="empty-state">
+            <span>✧</span>
+            <p>Your results will appear here.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="about" id="about">
+      <span class="eyebrow">OUR MISSION</span>
+      <h2>Create Smarter.<br><span class="gradient">Grow Faster.</span></h2>
+      <p>
+        A simple toolkit for creators who want to spend less time
+        brainstorming and more time making great content.
+      </p>
+      <a href="#tools" class="primary-btn">Start Creating →</a>
+    </section>
+  </main>
+
+  <footer>
+    <a class="logo" href="#"><span class="logo-icon">▶</span> Grow<span class="accent">Faster</span></a>
+    <p>Made for creators. © 2026 Grow Your Channel Faster.</p>
+  </footer>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
