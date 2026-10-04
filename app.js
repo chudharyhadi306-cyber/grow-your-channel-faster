@@ -1,89 +1,145 @@
-const $=(s,e=document)=>e.querySelector(s),H=s=>s;
-let S={user:null,saved:[],hist:[],done:{},theme:'',col:false,yearly:false};
-try{Object.assign(S,JSON.parse(localStorage.getItem('gycf')||'{}'))}catch(e){}
-const save=()=>{try{localStorage.setItem('gycf',JSON.stringify(S))}catch(e){}};
-const toast=m=>{const d=document.createElement('div');d.textContent=m;$('#toast').append(d);setTimeout(()=>d.remove(),2500)};
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const cp=t=>{navigator.clipboard?.writeText(t).then(()=>toast('Copied ✓'),()=>toast('Copy blocked by browser'))};
-const NICHES=['Tech','Gaming','Fitness','Finance','Cooking','Travel','Education','Beauty','Business'];
-const niche=['niche','Niche / topic','text'],tone=['tone','Tone','sel',['Energetic','Professional','Friendly','Funny','Emotional']];
-const T=[
-{id:'title',n:'Title Generator',i:'🎯',f:[['topic','Video topic','text'],['style','Style','sel',['Viral','Professional','Curiosity','Educational','Emotional']]],d:v=>[`I Tried ${v.topic} for 30 Days — Here's What Happened`,`${v.topic}: The Truth Nobody Tells You`,`How to Master ${v.topic} (Step-by-Step)`,`Stop Doing ${v.topic} Wrong — Do This Instead`,`${v.topic} in 2026: Everything You Need to Know`]},
-{id:'desc',n:'Description Generator',i:'📝',f:[['topic','Video topic','text'],['kw','Keywords (comma separated)','text']],d:v=>[`In this video we break down ${v.topic}. You'll learn practical steps you can use today. Keywords: ${v.kw||v.topic}.`,`⏱ Chapters: 0:00 Intro · 1:00 Main tips · 5:00 Recap`,`👍 Like, subscribe and turn on notifications for more ${v.topic} content!`]},
-{id:'hash',n:'Hashtag Generator',i:'#️⃣',f:[['topic','Topic','text'],['pl','Platform','sel',['YouTube','TikTok','Instagram','X']]],d:v=>{const t=v.topic.replace(/\W+/g,'');return[`Popular: #viral #trending #fyp #${v.pl.toLowerCase()}`,`Niche: #${t}tips #${t}community #learn${t}`,`Specific: #${t}2026 #${t}tutorial #${t}forbeginners`]}},
-{id:'tags',n:'Tag Generator',i:'🏷️',f:[['topic','Video topic','text']],d:v=>[v.topic,`${v.topic} tutorial`,`${v.topic} for beginners`,`best ${v.topic}`,`how to ${v.topic}`,`${v.topic} tips`,`${v.topic} 2026`]},
-{id:'script',n:'Script Writer',i:'🎬',f:[['topic','Topic','text'],['fmt','Format','sel',['YouTube Short','Long-form','Tutorial','Storytelling','Educational']],['dur','Duration','sel',['30 sec','3 min','8 min','15 min']],tone,['lang','Language','text']],d:v=>[`HOOK: What if ${v.topic} could change everything in ${v.dur}?`,`INTRO: Quick context on why ${v.topic} matters right now.`,`MAIN: 3 key points with an example for each.`,`CTA: Subscribe and comment your biggest question about ${v.topic}.`]},
-{id:'ideas',n:'Viral Ideas',i:'💡',f:[niche],d:v=>[`"I tested 5 ${v.niche} myths" — Angle: myth-busting · Appeal: curious beginners`,`"${v.niche} mistakes that cost me a year" — Angle: personal story`,`"Beginner vs expert: ${v.niche}" — Angle: comparison`,`"24 hours of only ${v.niche}" — Angle: challenge`]},
-{id:'thumb',n:'Thumbnail Ideas',i:'🖼️',f:[['topic','Video topic','text']],d:v=>[`Concept: Shocked face (left), bold 3-word text "${v.topic.split(' ').slice(0,3).join(' ')}" (right). Colors: yellow on deep purple. Layout: rule of thirds.`,`AI image prompt: "Cinematic close-up, creator reacting to ${v.topic}, neon purple and cyan rim lighting, high contrast, 16:9"`,`Concept: Split before/after with arrow and red circle highlight.`]},
-{id:'seo',n:'SEO Analyzer',i:'📊',f:[['title','Title','text'],['desc','Description','area'],['tags','Tags (comma separated)','text']],local:1},
-{id:'cal',n:'Content Calendar',i:'📅',f:[niche,['freq','Posts per week','sel',['2','3','5','7']],['pl','Platform','sel',['YouTube','TikTok','Instagram']]],d:v=>Array.from({length:30},(_,i)=>i%Math.ceil(7/v.freq)==0?`Day ${i+1}: ${['Tutorial','Story','Q&A','Listicle','Challenge','Review'][i%6]} about ${v.niche} (${v.pl})`:null).filter(Boolean)},
-{id:'audit',n:'Channel Audit',i:'🔍',f:[['info','Paste your channel info (name, description, recent titles, stats you know)','area']],real:1,d:v=>[`Demo mode: no live channel data is fetched. From what you pasted (${v.info.length} characters), connect AI for a real review.`,`Checklist: clear channel description · consistent upload schedule · keyword-rich titles · playlists · strong banner.`]},
-{id:'hook',n:'Shorts Hook Generator',i:'⚡',f:[['topic','Topic','text'],tone],d:v=>[`Wait — you're doing ${v.topic} completely wrong.`,`Nobody talks about this ${v.topic} trick…`,`I got results with ${v.topic} in 7 days. Here's how.`,`Stop scrolling if you care about ${v.topic}.`]},
-{id:'repurp',n:'Video Repurposing',i:'♻️',f:[['tr','Paste transcript','area']],real:1,d:v=>{const s=v.tr.split(/(?<=[.!?])\s+/).filter(x=>x.length>30).slice(0,4);return s.length?s.map((x,i)=>`Short #${i+1} idea — Hook: "${x.slice(0,70)}…"`):['Transcript too short.']}},
-{id:'comp',n:'Competitor Research',i:'🕵️',f:[['info','Paste competitor info you have (channel names, video titles, upload dates)','area']],real:1,d:v=>[`Demo mode: only your pasted data is used (${v.info.length} chars). No statistics are fetched or invented.`,`Tip: list 10+ competitor titles to spot repeated topics and gaps.`]},
-{id:'rew',n:'Content Rewriter',i:'✍️',f:[['txt','Original text','area'],tone,['lang','Language','text']],real:1,d:v=>[`Demo mode: AI needed for true rewriting. Original preserved: ${v.txt}`]}
-];
-const sam=async()=>{try{return typeof claude!=='undefined'?await claude.use('sample'):null}catch(e){return null}};
-function seo(v){const t=v.title||'',d=v.desc||'',g=(v.tags||'').split(',').map(x=>x.trim()).filter(Boolean);
-const c=[['Title 40–70 chars',t.length>=40&&t.length<=70,25],['Title has number or power word',/\d|how|best|secret|why|ultimate/i.test(t),15],['Description ≥150 chars',d.length>=150,25],['Description has link/CTA',/subscribe|http|link|follow/i.test(d),10],['5–15 tags',g.length>=5&&g.length<=15,15],['Title keyword in tags',g.some(x=>t.toLowerCase().includes(x.toLowerCase())&&x),10]];
-const sc=c.reduce((a,x)=>a+(x[1]?x[2]:0),0);return{sc,c}}
-const gen=async(tool,v,box)=>{
- if(tool.local){const r=seo(v);return{html:`<div class="card"><div class="stat gt">${r.sc}/100</div><div class="tag">Estimated heuristic score — not real platform analytics</div>${r.c.map(x=>`<div class="out">${x[1]?'✅':'❌'} ${x[0]} <span class="tag">${x[2]}pts</span></div>`).join('')}</div>`,txt:r.c.map(x=>(x[1]?'[x] ':'[ ] ')+x[0]).join('\n')+'\nScore '+r.sc}}
- const s=await sam();let lines,live=false;
- if(s){try{const p=`You are an expert YouTube/short-form growth strategist. Tool: ${tool.n}. Inputs: ${JSON.stringify(v)}. Output 4-8 distinct items, one per line, no preamble or numbering. Use only supplied data; never invent real analytics, channel stats or competitor numbers.`;
-  const r=await s(p,{cache:false});lines=r.text.split('\n').map(x=>x.trim()).filter(Boolean);live=true}catch(e){toast('AI unavailable ('+(e.code||'error')+') — using demo mode')}}
- if(!lines)lines=tool.d(v);return{lines,live}};
-function lineHTML(tool,l,i,k){const rate=tool.id=='title'?`<span class="tag">★ ${(7+((l.length*7)%30)/10).toFixed(1)}/10 est.</span>`:'';
- return `<div class="out ${S.done[k+i]?'d':''}"><div style="flex:1">${tool.id=='cal'?`<input type="checkbox" ${S.done[k+i]?'checked':''} data-done="${k+i}" aria-label="done"> `:''}${esc(l)} ${rate}</div><div class="row"><button class="btn sm" data-cp="${i}" aria-label="Copy">📋</button><button class="btn sm" data-fav="${i}" aria-label="Favorite">${S.saved.some(x=>x.t==l)?'★':'☆'}</button></div></div>`}
-let cur={};
-function toolView(id){const t=T.find(x=>x.id==id);return `<h2 style="text-align:left">${t.i} ${t.n}</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"><div class="card"><div id="mode" class="tag">checking AI…</div>
-${t.f.map(f=>`<label for="f_${f[0]}">${f[1]}</label>${f[2]=='sel'?`<select id="f_${f[0]}">${f[3].map(o=>`<option>${o}</option>`).join('')}</select>`:f[2]=='area'?`<textarea id="f_${f[0]}" rows="5" maxlength="6000"></textarea>`:`<input id="f_${f[0]}" maxlength="300" list="${f[0]=='niche'?'nl':''}">`}`).join('')}
-<datalist id="nl">${NICHES.map(n=>`<option>${n}`).join('')}</datalist><div class="row" style="margin-top:14px"><button class="btn p" id="go">Generate</button><button class="btn" id="re">Regenerate</button></div></div>
-<div class="card"><div class="row" style="justify-content:space-between"><b>Results</b><span class="row"><button class="btn sm" id="ca">Copy all</button><button class="btn sm" id="ex">Export TXT</button></span></div><div id="res"><p style="color:var(--mut)">Nothing yet — fill the form and press Generate.</p></div></div></div>`}
-function bindTool(id){const t=T.find(x=>x.id==id);sam().then(s=>{const m=$('#mode');if(m)m.innerHTML=s?'🟢 Live AI (asks consent on first use)':'🟠 Demo mode — template output, not AI'});
- const run=async()=>{const v={};for(const f of t.f){v[f[0]]=$('#f_'+f[0]).value.trim()}
-  const need=t.f.filter(f=>f[2]!='sel'&&!['kw','lang'].includes(f[0])&&!v[f[0]]);if(need.length)return toast('Please fill: '+need[0][1]);
-  $('#res').innerHTML='<span class="spin"></span> Generating…';
-  const r=await gen(t,v);cur={t,lines:r.lines,txt:r.txt};
-  if(r.html){$('#res').innerHTML=r.html;}else{$('#res').innerHTML=(r.live?'<div class="tag">Live AI</div>':'<div class="tag">Demo mode</div>')+r.lines.map((l,i)=>lineHTML(t,l,i,t.id)).join('')}
-  S.hist.unshift({t:t.n,at:Date.now(),n:(r.lines||[]).length||1,out:r.txt||r.lines.join('\n')});S.hist=S.hist.slice(0,50);save()};
- $('#go').onclick=run;$('#re').onclick=run;
- $('#ca').onclick=()=>cp(cur.txt||(cur.lines||[]).join('\n'));$('#ex').onclick=()=>{const data=cur.txt||(cur.lines||[]).join('\n');if(!data)return toast('Nothing to export');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'text/plain'}));a.download=t.id+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Exported')};
- $('#res').onclick=e=>{const b=e.target.closest('[data-cp],[data-fav]'),c=e.target.closest('[data-done]');if(c){S.done[c.dataset.done]=c.checked;save();c.closest('.out').classList.toggle('d',c.checked)}
-  if(!b)return;const l=cur.lines[b.dataset.cp??b.dataset.fav];if(b.dataset.cp!=null)cp(l);else{const i=S.saved.findIndex(x=>x.t==l);if(i>=0)S.saved.splice(i,1);else S.saved.push({t:l,tool:t.n});save();b.textContent=i>=0?'☆':'★';toast(i>=0?'Removed':'Saved to favorites')}}}
-const PL=[['Free',0,0,['10 AI generations/day','Basic creator tools','Saved ideas','Basic dashboard']],['Pro',19,15,['Higher AI limits','Advanced content tools','Content calendar','Advanced SEO suggestions','More saved projects'],1],['Business',59,49,['Team workspace','Expanded usage','Advanced workspace features','Priority support']]];
-const pricing=()=>`<div class="row" style="justify-content:center;margin-bottom:20px"><span>Monthly</span><input type="checkbox" id="yr" ${S.yearly?'checked':''} style="width:20px" aria-label="Yearly billing"><span>Yearly <span class="tag">save ~20%</span></span></div><div class="grid">${PL.map(p=>`<div class="card ${p[4]?'hot':''}"><h3>${p[0]} ${p[4]?'<span class="tag">Popular</span>':''}</h3><div class="price">$${S.yearly?p[2]:p[1]}<small style="font-size:14px;color:var(--mut)">/mo</small></div><ul style="padding-left:18px">${p[3].map(f=>`<li>${f}</li>`).join('')}</ul><button class="btn ${p[4]?'p':''}" data-up="${p[0]}" style="width:100%">${p[1]?'Upgrade (demo)':'Start free'}</button></div>`).join('')}</div><p style="text-align:center;color:var(--mut);font-size:13px">No payment is processed. Checkout is a demo placeholder; connect Stripe or Paddle for real billing.</p>`;
-function landing(){return `<nav class="top"><div class="logo gt" onclick="scrollTo(0,0)">▲ Grow Your Channel Faster</div><div class="row"><a href="#tools">Tools</a><a href="#price">Pricing</a><a href="#faq">FAQ</a><button class="btn sm" id="th">🌓</button><button class="btn p sm" data-start>${S.user?'Open dashboard':'Sign in'}</button></div></nav>
-<section class="hero"><span class="tag">Create Smarter. Grow Faster. Go Viral.</span><h1>Grow Your Channel Faster <span class="gt">with AI</span></h1><p>Discover viral ideas, create powerful content, optimize your videos, and grow your audience with one intelligent platform.</p><div class="row" style="justify-content:center"><button class="btn p" data-start>Start Growing for Free</button><a class="btn" href="#tools">Explore AI Tools</a></div>
-<div class="card prev"><div class="tag">Preview with sample data</div><div class="bars" style="margin-top:12px">${[40,55,48,70,62,85,100].map((h,i)=>`<i style="height:${h}%;animation-delay:${i*.1}s"></i>`).join('')}</div></div></section>
-<section><div class="grid">${[['14','AI tools'],['5','Title styles'],['30','Day calendars'],['0','Fake analytics']].map(s=>`<div class="card"><div class="stat gt">${s[0]}</div>${s[1]}</div>`).join('')}</div></section>
-<section id="tools"><h2>AI tools for every step</h2><div class="grid">${T.map(t=>`<div class="card" style="cursor:pointer" data-go="${t.id}"><div style="font-size:26px">${t.i}</div><b>${t.n}</b></div>`).join('')}</div></section>
-<section><h2>How it works</h2><div class="grid">${['Pick a tool','Describe your video','Copy, save, publish'].map((x,i)=>`<div class="card"><div class="stat gt">${i+1}</div>${x}</div>`).join('')}</div></section>
-<section><h2>Testimonials <span class="tag">demo content</span></h2><div class="grid">${['“Cut my planning time in half.”','“The hook ideas are gold.”','“Clean, fast, focused.”'].map(q=>`<div class="card">${q}<br><small style="color:var(--mut)">— Sample creator (fictional)</small></div>`).join('')}</div></section>
-<section id="price"><h2>Pricing</h2>${pricing()}</section>
-<section id="faq"><h2>FAQ</h2>${[['Is the AI real?','With Claude connected via the viewer, yes. Otherwise tools run in clearly labeled demo mode.'],['Do you show channel analytics?','No. Audit and competitor tools only analyze data you paste.'],['Where is my data stored?','Locally in your browser in this version.']].map(q=>`<details><summary>${q[0]}</summary><p>${q[1]}</p></details>`).join('')}</section>
-<footer style="text-align:center;padding:40px;color:var(--mut)">© 2026 Grow Your Channel Faster · Twitter · YouTube · Instagram</footer>`}
-function auth(){return `<div class="modal"><div class="card"><h3>Sign in / Sign up</h3><div class="bn">Local demo mode: your profile stays in this browser. No server, no password, not production authentication.</div><label for="un">Display name</label><input id="un" maxlength="40"><label for="ue">Email (optional)</label><input id="ue" type="email"><div class="row" style="margin-top:14px"><button class="btn p" id="ok">Continue</button><button class="btn" id="no">Cancel</button></div></div></div>`}
-const NAV=[['dash','Dashboard','🏠'],...T.map(t=>[t.id,t.n,t.i]),['saved','Favorites','⭐'],['hist','History','🕘'],['pricing','Pricing','💎'],['set','Settings','⚙️']];
-function dash(){const days=[...Array(7)].map((_,i)=>{const d=new Date(Date.now()-(6-i)*864e5).toDateString();return S.hist.filter(h=>new Date(h.at).toDateString()==d).length}),mx=Math.max(1,...days);
-return `<h2 style="text-align:left">Welcome back, ${esc(S.user.name)}</h2><div class="grid">${[['Generations',S.hist.length],['Favorites',S.saved.length],['Scripts',S.hist.filter(h=>h.t=='Script Writer').length],['Tools',T.length]].map(s=>`<div class="card"><div class="stat gt">${s[1]}</div>${s[0]}</div>`).join('')}</div>
-<div class="card" style="margin:16px 0"><b>Your generations, last 7 days</b> <span class="tag">your real usage</span><div class="bars" style="margin-top:10px">${days.map(d=>`<i style="height:${Math.max(4,d/mx*100)}%" title="${d}"></i>`).join('')}</div></div>
-<div class="card"><b>Recent activity</b>${S.hist.slice(0,5).map(h=>`<div class="out">${h.t} <small>${new Date(h.at).toLocaleString()}</small></div>`).join('')||'<p style="color:var(--mut)">No activity yet — try a tool from the sidebar.</p>'}</div>`}
-function render(){document.documentElement.dataset.theme=S.theme||'';const r=location.hash.slice(1);
- if(!r.startsWith('/app')){$('#app').innerHTML=landing();bindLanding();return}
- if(!S.user){$('#app').innerHTML=landing()+auth();bindAuth();return}
- const pg=r.split('/')[2]||'dash',q=S.q||'';
- const body=T.find(t=>t.id==pg)?toolView(pg):pg=='dash'?dash():pg=='saved'?`<h2 style="text-align:left">⭐ Favorites</h2>${S.saved.map((s,i)=>`<div class="out"><div>${esc(s.t)} <span class="tag">${s.tool}</span></div><button class="btn sm" data-rm="${i}">🗑</button></div>`).join('')||'<p style="color:var(--mut)">No favorites yet. Star results in any tool.</p>'}`:pg=='hist'?`<h2 style="text-align:left">🕘 History</h2>${S.hist.map(h=>`<div class="out"><div><b>${h.t}</b> <small>${new Date(h.at).toLocaleString()}</small><pre style="white-space:pre-wrap;margin:4px 0;font:inherit;color:var(--mut)">${esc(h.out.slice(0,200))}</pre></div></div>`).join('')||'<p style="color:var(--mut)">Empty.</p>'}<button class="btn" id="clr">Clear history</button>`:pg=='pricing'?pricing():`<h2 style="text-align:left">⚙️ Settings</h2><div class="card"><label for="sn">Display name</label><input id="sn" value="${esc(S.user.name)}"><div class="row" style="margin-top:12px"><button class="btn p" id="sv">Save</button><button class="btn" id="lo">Log out</button><button class="btn" id="del">Delete all local data</button></div></div>`;
- $('#app').innerHTML=`<button class="btn" id="mb" aria-label="Menu">☰</button><div class="shell"><aside class="side ${S.col?'c':''}"><div class="logo gt" style="margin-bottom:10px">▲ <span class="lb">GYCF</span></div><input class="lb" id="sq" placeholder="Search tools…" value="${esc(q)}" aria-label="Search tools"><div style="margin-top:8px">${NAV.filter(n=>n[1].toLowerCase().includes(q.toLowerCase())).map(n=>`<a href="#/app/${n[0]}" class="${pg==n[0]?'on':''}" title="${n[1]}"><span>${n[2]}</span><span class="lb">${n[1]}</span></a>`).join('')}</div><div class="row" style="margin-top:12px"><button class="btn sm" id="th">🌓</button><button class="btn sm" id="cl">${S.col?'»':'«'}</button><button class="btn sm" id="home">Home</button></div></aside><main class="main">${body}</main></div>`;
- bindShell(pg)}
-function bindLanding(){$('#th').onclick=tgl;document.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>location.hash='/app/dash');document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash='/app/'+b.dataset.go);bindPrice()}
-function bindPrice(){const y=$('#yr');if(y)y.onchange=()=>{S.yearly=y.checked;save();render()};document.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>toast(b.dataset.up=='Free'?'You are on Free':'Demo checkout only — no payment taken'))}
-function bindAuth(){bindLanding();$('#no').onclick=()=>location.hash='';$('#ok').onclick=()=>{const n=$('#un').value.trim();if(!n)return toast('Enter a display name');S.user={name:n,email:$('#ue').value};save();render()}}
-const tgl=()=>{S.theme=document.documentElement.dataset.theme=='dark'||(!S.theme&&matchMedia('(prefers-color-scheme:dark)').matches)?'light':'dark';save();render()};
-function bindShell(pg){$('#th').onclick=tgl;$('#cl').onclick=()=>{S.col=!S.col;save();render()};$('#home').onclick=()=>location.hash='';$('#mb').onclick=()=>{$('.side').classList.toggle('c');};
- const sq=$('#sq');if(sq)sq.oninput=()=>{S.q=sq.value;const p=sq.selectionStart;render();const n=$('#sq');n.focus();n.setSelectionRange(p,p)};
- if(T.find(t=>t.id==pg))bindTool(pg);bindPrice();
- document.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{if(confirm('Remove favorite?')){S.saved.splice(b.dataset.rm,1);save();render()}});
- const c=$('#clr');if(c)c.onclick=()=>{if(confirm('Clear all history?')){S.hist=[];save();render()}};
- const sv=$('#sv');if(sv){sv.onclick=()=>{S.user.name=$('#sn').value||S.user.name;save();toast('Saved');render()};$('#lo').onclick=()=>{S.user=null;save();location.hash=''};$('#del').onclick=()=>{if(confirm('Delete all local data?')){S={user:null,saved:[],hist:[],done:{},theme:'',col:false,yearly:false};save();location.hash=''}}}}
-addEventListener('hashchange',render);addEventListener('keydown',e=>{if(e.key=='/'&&$('#sq')&&document.activeElement.tagName!='INPUT'&&document.activeElement.tagName!='TEXTAREA'){e.preventDefault();$('#sq').focus()}});render();
+
+const topicInput = document.getElementById("topic");
+const generateBtn = document.getElementById("generate");
+const clearBtn = document.getElementById("clear");
+const results = document.getElementById("results");
+const toolTitle = document.getElementById("tool-title");
+const toast = document.getElementById("toast");
+
+let currentTool = "ideas";
+
+const templates = {
+  ideas: [
+    "10 Things Nobody Tells You About {topic}",
+    "I Tried {topic} for 7 Days — Here's What Happened",
+    "The Ultimate Beginner's Guide to {topic}",
+    "5 Mistakes Everyone Makes With {topic}",
+    "Is {topic} Really Worth It? The Truth"
+  ],
+  titles: [
+    "You Won't Believe These {topic} Secrets!",
+    "Stop Doing This With {topic}!",
+    "{topic}: Everything You Need to Know",
+    "The Truth About {topic} (Nobody Talks About This)",
+    "I Tested {topic} So You Don't Have To"
+  ],
+  hashtags: [
+    "#{tag}",
+    "#{tag}Tips",
+    "#{tag}Tutorial",
+    "#{tag}Community",
+    "#{tag}Creator",
+    "#YouTube",
+    "#Shorts",
+    "#ContentCreator",
+    "#Trending",
+    "#Viral"
+  ]
+};
+
+const titles = {
+  ideas: "Video Idea Generator",
+  titles: "Video Title Generator",
+  hashtags: "Hashtag Generator"
+};
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 2000);
+}
+
+function renderResults(items) {
+  results.replaceChildren();
+
+  items.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "result-item";
+
+    const text = document.createElement("span");
+    text.textContent = item;
+
+    const button = document.createElement("button");
+    button.className = "copy-btn";
+    button.textContent = "Copy";
+
+    button.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(item);
+        showToast("Copied to clipboard!");
+      } catch {
+        showToast("Please select and copy the text.");
+      }
+    });
+
+    row.append(text, button);
+    results.appendChild(row);
+  });
+}
+
+function generate() {
+  const topic = topicInput.value.trim();
+
+  if (!topic) {
+    showToast("Please enter your topic first.");
+    topicInput.focus();
+    return;
+  }
+
+  const cleanTopic = topic.replace(/^#+/, "").trim();
+  let items;
+
+  if (currentTool === "hashtags") {
+    const tag = cleanTopic.replace(/[^a-zA-Z0-9]/g, "");
+    items = templates.hashtags.map((item) =>
+      item.replace("{tag}", tag)
+    );
+  } else {
+    items = templates[currentTool].map((item) =>
+      item.replaceAll("{topic}", cleanTopic)
+    );
+  }
+
+  renderResults(items);
+}
+
+function selectTool(tool) {
+  currentTool = tool;
+  toolTitle.textContent = titles[tool];
+  results.innerHTML = `
+    <div class="empty-state">
+      <span>✧</span>
+      <p>Your results will appear here.</p>
+    </div>
+  `;
+
+  document.querySelector(".generator").scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+}
+
+document.querySelectorAll("[data-tool]").forEach((button) => {
+  button.addEventListener("click", () => {
+    selectTool(button.dataset.tool);
+  });
+});
+
+generateBtn.addEventListener("click", generate);
+
+topicInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") generate();
+});
+
+clearBtn.addEventListener("click", () => {
+  topicInput.value = "";
+  results.innerHTML = `
+    <div class="empty-state">
+      <span>✧</span>
+      <p>Your results will appear here.</p>
+    </div>
+  `;
+  topicInput.focus();
+});
+
+console.log("Grow Your Channel Faster is ready!");
